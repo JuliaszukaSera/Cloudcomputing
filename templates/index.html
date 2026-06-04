@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>FlightMatch — Loty grupowe</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      min-height: 100vh;
+    }
+
+    header {
+      background: linear-gradient(135deg, #cc0000 0%, #8b0000 100%);
+      padding: 1.25rem 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+    }
+
+    header svg { flex-shrink: 0; }
+    header h1  { font-size: 1.6rem; font-weight: 700; letter-spacing: -0.5px; }
+    header p   { font-size: 0.85rem; opacity: 0.85; margin-top: 2px; }
+
+    .mode-chip {
+      font-size: 0.72rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      background: rgba(255,255,255,0.15);
+      margin-left: 0.5rem;
+      vertical-align: middle;
+    }
+
+    .rh-badge {
+      margin-left: auto;
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 6px;
+      padding: 0.3rem 0.75rem;
+      font-size: 0.75rem;
+      white-space: nowrap;
+    }
+
+    main { max-width: 980px; margin: 2rem auto; padding: 0 1rem; }
+
+    .card {
+      background: #1a1d27;
+      border: 1px solid #2d3148;
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .card h2 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: #f8f8f8;
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    @media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } }
+
+    label { display: block; font-size: 0.8rem; color: #94a3b8; margin-bottom: 0.35rem; }
+
+    input {
+      width: 100%;
+      padding: 0.6rem 0.85rem;
+      background: #0f1117;
+      border: 1px solid #2d3148;
+      border-radius: 8px;
+      color: #e2e8f0;
+      font-size: 0.9rem;
+      transition: border-color 0.2s;
+    }
+
+    input:focus { outline: none; border-color: #cc0000; }
+    input::placeholder { color: #4a5568; }
+    input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.6); }
+
+    .traveler-block {
+      border: 1px solid #2d3148;
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 0.75rem;
+      position: relative;
+      background: #12151f;
+    }
+
+    .traveler-title {
+      font-size: 0.78rem;
+      color: #cc0000;
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.55rem 1.1rem;
+      border-radius: 8px;
+      border: none;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    .btn:active { transform: scale(0.97); }
+
+    .btn-primary {
+      background: #cc0000;
+      color: #fff;
+      width: 100%;
+      justify-content: center;
+      padding: 0.8rem;
+      font-size: 1rem;
+      margin-top: 0.5rem;
+    }
+
+    .btn-primary:hover    { background: #aa0000; }
+    .btn-primary:disabled { background: #4a1a1a; cursor: not-allowed; }
+
+    .btn-outline {
+      background: transparent;
+      color: #94a3b8;
+      border: 1px solid #2d3148;
+    }
+
+    .btn-outline:hover { background: #2d3148; color: #e2e8f0; }
+
+    .btn-danger {
+      background: transparent;
+      color: #f87171;
+      border: 1px solid #4a1a1a;
+      position: absolute;
+      top: 0.75rem;
+      right: 0.75rem;
+      padding: 0.25rem 0.5rem;
+      font-size: 0.75rem;
+    }
+
+    .btn-danger:hover { background: #4a1a1a; }
+
+    /* API banner */
+    .api-banner {
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      background: #2a1a00;
+      border: 1px solid #854d0e;
+    }
+
+    .api-banner.configured { background: #0d2a1a; border-color: #166534; }
+    .api-banner-text { flex: 1; font-size: 0.85rem; }
+    .api-banner-text strong { display: block; margin-bottom: 2px; }
+    .api-banner-text span   { color: #94a3b8; font-size: 0.8rem; }
+
+    .btn-config {
+      background: #854d0e;
+      color: #fff;
+      border: none;
+      border-radius: 7px;
+      padding: 0.45rem 0.9rem;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .btn-config:hover       { background: #92400e; }
+    .btn-config.green       { background: #166534; }
+    .btn-config.green:hover { background: #14532d; }
+
+    /* Modal */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-overlay.open { display: flex; }
+
+    .modal {
+      background: #1a1d27;
+      border: 1px solid #2d3148;
+      border-radius: 14px;
+      padding: 1.75rem;
+      width: 100%;
+      max-width: 480px;
+      margin: 1rem;
+    }
+
+    .modal h3 { font-size: 1rem; margin-bottom: 0.4rem; }
+
+    .modal p {
+      font-size: 0.8rem;
+      color: #94a3b8;
+      margin-bottom: 1.1rem;
+      line-height: 1.55;
+    }
+
+    .modal input { margin-bottom: 0.75rem; font-family: monospace; letter-spacing: 0.5px; }
+
+    .modal-actions { display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 0.25rem; }
+
+    .modal-feedback { margin-top: 0.75rem; font-size: 0.82rem; min-height: 1.2em; }
+    .modal-feedback.ok  { color: #4ade80; }
+    .modal-feedback.err { color: #f87171; }
+
+    /* Results */
+    #results { display: none; }
+
+    .summary-banner {
+      padding: 1rem 1.25rem;
+      border-radius: 10px;
+      margin-bottom: 1.5rem;
+      font-size: 0.9rem;
+    }
+
+    .banner-success { background: #1a3a1a; border: 1px solid #166534; color: #4ade80; }
+    .banner-warning { background: #3a2a00; border: 1px solid #854d0e; color: #fbbf24; }
+
+    .result-card {
+      background: #1a1d27;
+      border: 1px solid #2d3148;
+      border-radius: 12px;
+      margin-bottom: 1.25rem;
+      overflow: hidden;
+    }
+
+    .result-header {
+      padding: 0.9rem 1.25rem;
+      background: #12151f;
+      border-bottom: 1px solid #2d3148;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .result-header h3 { font-size: 0.95rem; font-weight: 600; flex: 1; }
+
+    .iata-badge {
+      font-size: 0.75rem;
+      background: #cc0000;
+      color: #fff;
+      border-radius: 4px;
+      padding: 0.15rem 0.45rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    .arrow { color: #4a5568; }
+
+    .lowest-price {
+      font-size: 0.8rem;
+      color: #4ade80;
+      background: #1a3a1a;
+      border: 1px solid #166534;
+      border-radius: 5px;
+      padding: 0.15rem 0.5rem;
+    }
+
+    .no-flights { padding: 1.25rem; color: #94a3b8; font-size: 0.85rem; }
+    .error-msg  { padding: 1.25rem; color: #f87171; font-size: 0.85rem; }
+
+    /* Flight cards */
+    .flight-list { padding: 0.75rem 1rem; display: flex; flex-direction: column; gap: 0.75rem; }
+
+    .flight-item {
+      background: #12151f;
+      border: 1px solid #2d3148;
+      border-radius: 10px;
+      padding: 0.9rem 1rem;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 0.75rem 1.25rem;
+      align-items: center;
+    }
+
+    .airline-logo {
+      width: 36px;
+      height: 36px;
+      object-fit: contain;
+      border-radius: 4px;
+      background: #1a1d27;
+      padding: 2px;
+    }
+
+    .airline-placeholder {
+      width: 36px;
+      height: 36px;
+      border-radius: 4px;
+      background: #2d3148;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.65rem;
+      color: #94a3b8;
+      text-align: center;
+      line-height: 1.2;
+    }
+
+    .flight-middle { min-width: 0; }
+
+    .flight-route {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+
+    .flight-route .time { color: #f8f8f8; }
+    .flight-route .sep  { color: #4a5568; font-size: 0.8rem; flex: 1; text-align: center; border-top: 1px solid #2d3148; max-width: 60px; }
+
+    .flight-meta {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      font-size: 0.76rem;
+      color: #94a3b8;
+    }
+
+    .flight-meta span { white-space: nowrap; }
+
+    .flight-price {
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .price-value {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #f8f8f8;
+    }
+
+    .price-label { font-size: 0.7rem; color: #64748b; }
+
+    .stops-badge {
+      display: inline-block;
+      font-size: 0.7rem;
+      padding: 0.1rem 0.4rem;
+      border-radius: 3px;
+      font-weight: 600;
+    }
+
+    .stops-0 { background: #1a3a1a; color: #4ade80; }
+    .stops-1 { background: #2a2a00; color: #fbbf24; }
+    .stops-2 { background: #3a1a1a; color: #f87171; }
+
+    .spinner {
+      display: none;
+      width: 20px; height: 20px;
+      border: 2px solid rgba(255,255,255,0.2);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+<header>
+  <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+    <circle cx="18" cy="18" r="18" fill="#fff" fill-opacity="0.1"/>
+    <path d="M7 22l4-8 7 4 4-8 7 10H7z" fill="#fff" fill-opacity="0.9"/>
+    <circle cx="18" cy="12" r="2.5" fill="#fff"/>
+  </svg>
+  <div>
+    <h1>FlightMatch <span class="mode-chip" id="modeChip">tryb lokalny</span></h1>
+    <p>Znajdź loty dla całej grupy do wspólnego celu &mdash; powered by Google Flights</p>
+  </div>
+  <span class="rh-badge">&#9888; Red Hat OpenShift</span>
+</header>
+
+<main>
+
+  <!-- API Key banner -->
+  <div id="apiBanner" class="api-banner">
+    <div class="api-banner-text">
+      <strong id="apiBannerTitle">⚠ Brak klucza SerpAPI</strong>
+      <span id="apiBannerSub">Skonfiguruj klucz aby móc wyszukiwać loty przez Google Flights.</span>
+    </div>
+    <button type="button" class="btn-config" id="apiBannerBtn" onclick="openApiModal()">Ustaw klucz API</button>
+  </div>
+
+  <!-- API Key modal -->
+  <div class="modal-overlay" id="apiModalOverlay">
+    <div class="modal">
+      <h3>🔑 Klucz SerpAPI</h3>
+      <p>
+        Wklej klucz ze strony <strong>serpapi.com/manage-api-key</strong>.<br>
+        Klucz jest zapisywany w <code>localStorage</code> przeglądarki i wysyłany wyłącznie do SerpAPI.
+      </p>
+      <label>Klucz API</label>
+      <input type="text" id="apiKeyInput" placeholder="np. abc123..." autocomplete="off" spellcheck="false"/>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-outline" onclick="closeApiModal()">Anuluj</button>
+        <button type="button" class="btn btn-primary" style="width:auto;padding:0.55rem 1.2rem;" onclick="saveApiKey()">Zapisz</button>
+      </div>
+      <div class="modal-feedback" id="apiFeedback"></div>
+    </div>
+  </div>
+
+  <form id="searchForm">
+
+    <div class="card">
+      <h2>✈ Cel podróży i data</h2>
+      <div class="form-row">
+        <div>
+          <label>Lotnisko docelowe (kod IATA)</label>
+          <input type="text" id="destination" placeholder="np. WAW, CDG, JFK"
+                 maxlength="3" required style="text-transform:uppercase"/>
+        </div>
+        <div>
+          <label>Data lotu</label>
+          <input type="date" id="flightDate" required/>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>👥 Podróżujący</h2>
+      <div id="travelersContainer"></div>
+      <div style="display:flex;gap:0.75rem;margin-top:0.5rem;">
+        <button type="button" class="btn btn-outline" onclick="addTraveler()">+ Dodaj osobę</button>
+      </div>
+    </div>
+
+    <div class="card" style="padding:1rem 1.5rem;">
+      <button type="submit" class="btn btn-primary" id="searchBtn">
+        <span class="spinner" id="spinner"></span>
+        <span id="btnText">Szukaj lotów</span>
+      </button>
+    </div>
+
+  </form>
+
+  <div id="results"></div>
+</main>
+
+<script>
+  let backendMode = false;
+
+  async function detectMode() {
+    try {
+      const r = await fetch('/api/config', { signal: AbortSignal.timeout(1500) });
+      if (r.ok) {
+        backendMode = true;
+        document.getElementById('modeChip').textContent = 'OpenShift';
+        const cfg = await r.json();
+        // Jeśli serwer nie ma klucza, a localStorage ma — wyślij automatycznie
+        if (!cfg.api_key_configured && getKey()) {
+          await fetch('/api/config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ api_key: getKey() }),
+          });
+        }
+      }
+    } catch { /* tryb lokalny */ }
+    refreshBanner();
+  }
+
+  // ── Klucz API ──────────────────────────────────────────────────────────────
+  const LS_KEY = 'serpapi_key';
+  const getKey = ()  => localStorage.getItem(LS_KEY) || '';
+  const setKey = (k) => localStorage.setItem(LS_KEY, k);
+
+  function openApiModal() {
+    document.getElementById('apiKeyInput').value   = getKey();
+    document.getElementById('apiFeedback').textContent = '';
+    document.getElementById('apiFeedback').className   = 'modal-feedback';
+    document.getElementById('apiModalOverlay').classList.add('open');
+    setTimeout(() => document.getElementById('apiKeyInput').focus(), 50);
+  }
+
+  function closeApiModal() {
+    document.getElementById('apiModalOverlay').classList.remove('open');
+  }
+
+  async function saveApiKey() {
+    const key      = document.getElementById('apiKeyInput').value.trim();
+    const feedback = document.getElementById('apiFeedback');
+
+    if (!key) {
+      feedback.textContent = 'Wpisz klucz API.';
+      feedback.className   = 'modal-feedback err';
+      return;
+    }
+
+    setKey(key);
+
+    if (backendMode) {
+      try {
+        const res  = await fetch('/api/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ api_key: key }),
+        });
+        const data = await res.json();
+        if (!res.ok) { feedback.textContent = data.detail || 'Błąd serwera.'; feedback.className = 'modal-feedback err'; return; }
+      } catch (e) {
+        feedback.textContent = `Błąd serwera: ${e.message}`;
+        feedback.className   = 'modal-feedback err';
+        return;
+      }
+    }
+
+    feedback.textContent = 'Klucz zapisany.';
+    feedback.className   = 'modal-feedback ok';
+    refreshBanner();
+    setTimeout(closeApiModal, 900);
+  }
+
+  function refreshBanner() {
+    const key    = getKey();
+    const banner = document.getElementById('apiBanner');
+    const title  = document.getElementById('apiBannerTitle');
+    const sub    = document.getElementById('apiBannerSub');
+    const btn    = document.getElementById('apiBannerBtn');
+
+    if (key) {
+      banner.classList.add('configured');
+      title.textContent = '✓ Klucz SerpAPI skonfigurowany';
+      sub.textContent   = `Wyszukiwanie przez Google Flights — ****${key.slice(-4)}`;
+      btn.textContent   = 'Zmień klucz';
+      btn.classList.add('green');
+    } else {
+      banner.classList.remove('configured');
+      title.textContent = '⚠ Brak klucza SerpAPI';
+      sub.textContent   = 'Skonfiguruj klucz aby móc wyszukiwać loty przez Google Flights.';
+      btn.textContent   = 'Ustaw klucz API';
+      btn.classList.remove('green');
+    }
+  }
+
+  // ── Wyszukiwanie ───────────────────────────────────────────────────────────
+  async function searchViaBackend(travelers, destination, date) {
+    const res = await fetch('/api/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ travelers, destination_iata: destination, flight_date: date }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: res.statusText }));
+      throw new Error(err.detail || `HTTP ${res.status}`);
+    }
+    return res.json();
+  }
+
+  async function searchViaSerpapi(travelers, destination, date) {
+    const key = getKey();
+    if (!key) throw new Error('Brak klucza API. Ustaw go w panelu ustawień.');
+
+    const results = [];
+
+    for (const t of travelers) {
+      const params = new URLSearchParams({
+        engine:        'google_flights',
+        api_key:       key,
+        departure_id:  t.departure_iata.toUpperCase(),
+        arrival_id:    destination.toUpperCase(),
+        outbound_date: date,
+        type:          '2',
+        currency:      'USD',
+        hl:            'en',
+      });
+
+      let flights      = [];
+      let lowest_price = null;
+      let error        = null;
+
+      try {
+        const res  = await fetch(`https://serpapi.com/search?${params}`);
+        const data = await res.json();
+
+        if (data.error) {
+          error = data.error;
+        } else {
+          lowest_price = data.price_insights?.lowest_price ?? null;
+
+          const allGroups = [...(data.best_flights || []), ...(data.other_flights || [])];
+          for (const g of allGroups) {
+            const legs  = g.flights || [];
+            if (!legs.length) continue;
+            const first = legs[0];
+            const last  = legs[legs.length - 1];
+            const layovers = (g.layovers || []).map(lv => ({
+              airport:      lv.name || lv.id || '?',
+              duration_min: lv.duration || 0,
+            }));
+            flights.push({
+              flight_number:    first.flight_number || 'N/A',
+              airline:          first.airline || 'Unknown',
+              airline_logo:     first.airline_logo || null,
+              departure_airport: first.departure_airport?.name || t.departure_iata,
+              departure_iata:   first.departure_airport?.id   || t.departure_iata,
+              departure_time:   first.departure_airport?.time || '',
+              arrival_airport:  last.arrival_airport?.name    || destination,
+              arrival_iata:     last.arrival_airport?.id      || destination,
+              arrival_time:     last.arrival_airport?.time    || '',
+              duration_min:     g.total_duration || 0,
+              price:            g.price ?? null,
+              currency:         'USD',
+              stops:            layovers.length,
+              layovers,
+              airplane:         first.airplane || null,
+              travel_class:     first.travel_class || null,
+            });
+          }
+        }
+      } catch (e) {
+        error = `Błąd sieci: ${e.message}`;
+      }
+
+      results.push({
+        traveler_name:  t.name,
+        departure_iata: t.departure_iata.toUpperCase(),
+        flights,
+        lowest_price,
+        error,
+      });
+    }
+
+    const all_found = results.every(r => r.flights.length > 0);
+    return { destination_iata: destination.toUpperCase(), flight_date: date, results, all_found };
+  }
+
+  // ── Renderowanie ───────────────────────────────────────────────────────────
+  function fmtDuration(min) {
+    if (!min) return '—';
+    const h = Math.floor(min / 60);
+    const m = min % 60;
+    return h ? `${h}h ${m}m` : `${m}m`;
+  }
+
+  function fmtTime(str) {
+    if (!str) return '—';
+    const parts = str.split(' ');
+    return parts.length === 2 ? parts[1] : str;
+  }
+
+  function stopsLabel(n) {
+    if (n === 0) return `<span class="stops-badge stops-0">Bezpośredni</span>`;
+    if (n === 1) return `<span class="stops-badge stops-1">1 przesiadka</span>`;
+    return `<span class="stops-badge stops-2">${n} przesiadki</span>`;
+  }
+
+  function renderFlightItem(f, dest) {
+    const logo = f.airline_logo
+      ? `<img class="airline-logo" src="${f.airline_logo}" alt="${f.airline}" onerror="this.style.display='none'">`
+      : `<div class="airline-placeholder">${f.airline.slice(0,3).toUpperCase()}</div>`;
+
+    const layoverTip = f.layovers.length
+      ? `Przesiadki: ${f.layovers.map(l => `${l.airport} (${fmtDuration(l.duration_min)})`).join(', ')}`
+      : '';
+
+    return `
+      <div class="flight-item" title="${layoverTip}">
+        <div>${logo}</div>
+        <div class="flight-middle">
+          <div class="flight-route">
+            <span class="time">${fmtTime(f.departure_time)}</span>
+            <span class="sep">──────</span>
+            <span class="time">${fmtTime(f.arrival_time)}</span>
+          </div>
+          <div class="flight-meta">
+            <span>${f.flight_number}</span>
+            <span>${f.airline}</span>
+            ${f.airplane ? `<span>${f.airplane}</span>` : ''}
+            <span>${fmtDuration(f.duration_min)}</span>
+            <span>${stopsLabel(f.stops)}</span>
+            ${f.travel_class ? `<span>${f.travel_class}</span>` : ''}
+          </div>
+        </div>
+        <div class="flight-price">
+          ${f.price != null
+            ? `<div class="price-value">$${f.price}</div><div class="price-label">USD / os.</div>`
+            : `<div class="price-label" style="color:#4a5568">brak ceny</div>`
+          }
+        </div>
+      </div>`;
+  }
+
+  function renderResults(data) {
+    const container = document.getElementById('results');
+    container.style.display = 'block';
+
+    const banner = data.all_found
+      ? `<div class="summary-banner banner-success">✓ Znaleziono loty dla wszystkich do <strong>${data.destination_iata}</strong> na dzień <strong>${data.flight_date}</strong>.</div>`
+      : `<div class="summary-banner banner-warning">⚠ Nie udało się znaleźć lotów dla wszystkich podróżujących.</div>`;
+
+    let html = banner;
+
+    for (const r of data.results) {
+      const priceTag = r.lowest_price != null
+        ? `<span class="lowest-price">od $${r.lowest_price}</span>`
+        : '';
+
+      html += `<div class="result-card">
+        <div class="result-header">
+          <span class="iata-badge">${r.departure_iata}</span>
+          <span class="arrow">→</span>
+          <span class="iata-badge">${data.destination_iata}</span>
+          <h3>${r.traveler_name}</h3>
+          ${priceTag}
+        </div>`;
+
+      if (r.error) {
+        html += `<div class="error-msg">⚠ ${r.error}</div>`;
+      } else if (!r.flights.length) {
+        html += `<div class="no-flights">Brak dostępnych lotów na wybrany dzień.</div>`;
+      } else {
+        html += `<div class="flight-list">`;
+        for (const f of r.flights) html += renderFlightItem(f, data.destination_iata);
+        html += `</div>`;
+      }
+
+      html += `</div>`;
+    }
+
+    container.innerHTML = html;
+    container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  // ── Formularz ──────────────────────────────────────────────────────────────
+  let travelerCount = 0;
+
+  function addTraveler(name = '', iata = '') {
+    travelerCount++;
+    const id  = travelerCount;
+    const div = document.createElement('div');
+    div.className = 'traveler-block';
+    div.id = `traveler-${id}`;
+    div.innerHTML = `
+      <div class="traveler-title">Osoba ${id}</div>
+      ${id > 1 ? `<button type="button" class="btn btn-danger" onclick="removeTraveler(${id})">✕ Usuń</button>` : ''}
+      <div class="form-row">
+        <div>
+          <label>Imię / Nazwa</label>
+          <input type="text" name="name_${id}" placeholder="np. Anna" value="${name}" required/>
+        </div>
+        <div>
+          <label>Lotnisko odlotu (kod IATA)</label>
+          <input type="text" name="iata_${id}" placeholder="np. KRK, LHR, BER"
+                 maxlength="3" style="text-transform:uppercase" value="${iata}" required/>
+        </div>
+      </div>`;
+    document.getElementById('travelersContainer').appendChild(div);
+  }
+
+  function removeTraveler(id) {
+    document.getElementById(`traveler-${id}`)?.remove();
+  }
+
+  document.getElementById('searchForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    if (!getKey()) { openApiModal(); return; }
+
+    const destination = document.getElementById('destination').value.trim().toUpperCase();
+    const flightDate  = document.getElementById('flightDate').value;
+    const travelers   = [];
+
+    document.querySelectorAll('.traveler-block').forEach(block => {
+      const n = block.querySelector('input[name^="name_"]')?.value.trim();
+      const i = block.querySelector('input[name^="iata_"]')?.value.trim().toUpperCase();
+      if (n && i?.length === 3) travelers.push({ name: n, departure_iata: i });
+    });
+
+    if (!travelers.length) { alert('Dodaj co najmniej jednego podróżującego.'); return; }
+
+    const btn     = document.getElementById('searchBtn');
+    const spinner = document.getElementById('spinner');
+    const btnText = document.getElementById('btnText');
+
+    btn.disabled          = true;
+    spinner.style.display = 'inline-block';
+    btnText.textContent   = 'Szukam…';
+    document.getElementById('results').style.display = 'none';
+
+    try {
+      const data = backendMode
+        ? await searchViaBackend(travelers, destination, flightDate)
+        : await searchViaSerpapi(travelers, destination, flightDate);
+      renderResults(data);
+    } catch (err) {
+      alert(`Błąd: ${err.message}`);
+    } finally {
+      btn.disabled          = false;
+      spinner.style.display = 'none';
+      btnText.textContent   = 'Szukaj lotów';
+    }
+  });
+
+  // ── Init ───────────────────────────────────────────────────────────────────
+  document.getElementById('apiModalOverlay').addEventListener('click', e => {
+    if (e.target === e.currentTarget) closeApiModal();
+  });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeApiModal(); });
+
+  detectMode();
+  addTraveler('Anna', 'KRK');
+  addTraveler('Marek', 'GDN');
+
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  document.getElementById('flightDate').value = tomorrow.toISOString().split('T')[0];
+</script>
+</body>
+</html>
