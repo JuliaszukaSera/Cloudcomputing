@@ -2,7 +2,6 @@ import os
 import logging
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import HTMLResponse
-from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from app.models import FlightSearchRequest, FlightMatchResponse
@@ -17,7 +16,6 @@ app = FastAPI(
     version="1.0.0",
 )
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 # Runtime storage — nadpisuje zmienną środowiskową gdy ustawiony przez UI
